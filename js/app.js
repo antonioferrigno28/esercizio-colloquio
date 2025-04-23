@@ -4,13 +4,21 @@ function App() {
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [isDiscounted, setDiscounted] = useState(false);
+  const [orderData, setOrderData] = useState({ cart: [], total: 0 });
 
   // Al caricamento della pagina prendi i prodotti
   useEffect(() => {
     fetch("get-products.php")
       .then((response) => response.json())
-      // prende i dati sui prodotti e li mette nell'array "Prodotti"
-      .then((data) => setProducts(data))
+      .then((data) => {
+        // Aggiungi initialQuantity basato su quantity
+        //Per avere la quantità iniziale dei prodotti
+        const productsWithInitialQuantity = data.map((product) => ({
+          ...product,
+          initialQuantity: product.quantity,
+        }));
+        setProducts(productsWithInitialQuantity);
+      })
       .catch((err) => console.error("Errore nel caricamento prodotti:", err));
   }, []);
 
@@ -21,11 +29,20 @@ function App() {
       (acc, product) => acc + product.price * product.quantity,
       0
     );
-    // se totale maggiore di 100 allora sconta
+    // se totale maggiore di 100 allora abilita lo sconto rendendolo true
     if (total > 100) {
       setDiscounted(true);
+      // console.log(cart);
+      // console.log(total);
+      setOrderData({ cart, total });
+      console.log(orderData);
     } else {
       setDiscounted(false);
+
+      // console.log(cart);
+      // console.log(total);
+      setOrderData({ cart, total });
+      console.log(orderData);
     }
   }, [cart]);
 
@@ -46,21 +63,24 @@ function App() {
   };
 
   // Gestione aggiunta al carrello, prende come parametri il prodotto e la quantità (1)
+  // Gestione aggiunta al carrello, prende come parametri il prodotto e la quantità (1)
   const addToCart = (product, quantity) => {
-    // Controlla se il prodotto è già presente nel carrello
+    // Blocca se la quantità è <= 0
+    if (product.quantity < 1) {
+      alert("Prodotto esaurito.");
+      return;
+    }
+
     const existing = cart.find((item) => item.id === product.id);
-    // Se esiste, prende la quantità attuale, altrimenti la considera 0
     const currentQuantity = existing ? existing.quantity : 0;
 
-    // Se la quantità supera la disponibilità in magazzino, mostra un alert
-    if (currentQuantity + quantity > product.quantity) {
+    if (currentQuantity + quantity > product.initialQuantity) {
       alert("Quantità non disponibile.");
       return;
     }
 
-    // Aggiorna lo stato del carrello
+    // Aggiorna il carrello
     setCart((prev) => {
-      // Se il prodotto è già nel carrello, ne aggiorna la quantità
       if (existing) {
         return prev.map((item) =>
           item.id === product.id
@@ -68,15 +88,67 @@ function App() {
             : item
         );
       } else {
-        // Se non è presente, lo aggiunge al carrello con la quantità specificata
         return [...prev, { ...product, quantity }];
       }
     });
 
-    // Mostra un messaggio di conferma dell'aggiunta
-    alert(`${product.name} aggiunto al carrello!`);
+    // Aggiorna la disponibilità visibile (ma non usarla per i controlli)
+    setProducts((prev) =>
+      prev.map((item) =>
+        item.id === product.id
+          ? { ...item, quantity: item.quantity - quantity }
+          : item
+      )
+    );
   };
-  ``;
+
+  //invio dell'ordine al backend
+  const handleOrder = () => {
+    fetch("save-order.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(orderData),
+    })
+      .then((response) => response.text())
+      .then((data) => {
+        console.log("Risposta dal server:", data);
+        try {
+          const jsonData = JSON.parse(data);
+          if (jsonData.success) {
+            alert("Ordine effettuato con successo!");
+            // PRIMA svuota il carrello
+            setCart([]);
+            // POI ricarica i prodotti per ripristinare le quantità
+            reloadProducts();
+          } else {
+            alert("Errore nell'effettuare l'ordine.");
+          }
+        } catch (err) {
+          console.error("Errore nel parsing del JSON:", err);
+        }
+      })
+      .catch((err) => {
+        console.error("Errore nell'invio dell'ordine:", err);
+        alert("Si è verificato un errore durante l'ordine.");
+      });
+  };
+
+  const reloadProducts = () => {
+    fetch("get-products.php")
+      .then((response) => response.json())
+      .then((data) => {
+        // Aggiungi initialQuantity basato su quantity
+        //Per avere la quantità iniziale dei prodotti
+        const productsWithInitialQuantity = data.map((product) => ({
+          ...product,
+          initialQuantity: product.quantity,
+        }));
+        setProducts(productsWithInitialQuantity);
+      })
+      .catch((err) => console.error("Errore nel caricamento prodotti:", err));
+  };
 
   return (
     <div>
@@ -124,8 +196,16 @@ function App() {
         {getTotal()}
       </h3>
       <div className="d-flex justify-content-between mt-4">
-        <button className="btn btn-success">Conferma ordine</button>
-        <button className="btn btn-danger" onClick={() => setCart([])}>
+        <button className="btn btn-success" onClick={handleOrder}>
+          Conferma ordine
+        </button>
+        <button
+          className="btn btn-danger"
+          onClick={() => {
+            setCart([]);
+            reloadProducts();
+          }}
+        >
           Svuota carrello
         </button>
       </div>

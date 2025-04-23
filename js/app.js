@@ -52,8 +52,8 @@ function App() {
     // Se esiste, prende la quantità attuale, altrimenti la considera 0
     const currentQuantity = existing ? existing.quantity : 0;
 
-    // Se la quantità richiesta è negativa o supera la disponibilità in magazzino, mostra un alert
-    if (quantity <= 0 || currentQuantity + quantity > product.quantity) {
+    // Se la quantità supera la disponibilità in magazzino, mostra un alert
+    if (currentQuantity + quantity > product.quantity) {
       alert("Quantità non disponibile.");
       return;
     }

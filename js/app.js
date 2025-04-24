@@ -5,8 +5,6 @@ function App() {
   const [cart, setCart] = useState([]);
   const [isDiscounted, setDiscounted] = useState(false);
   const [orderData, setOrderData] = useState({ cart: [], total: 0 });
-  const [showOrderModal, setShowOrderModal] = useState(false); // Modal per ordine
-  const [showClearCartModal, setShowClearCartModal] = useState(false); // Modal per svuotare il carrello
 
   // FASE DI CARICAMENTO
 
@@ -226,6 +224,7 @@ function App() {
           className="btn btn-success btn-animation btn-green fw-semibold"
           data-bs-toggle="modal"
           data-bs-target="#orderModal"
+          disabled={cart.length === 0}
         >
           Conferma Ordine
         </button>
@@ -233,6 +232,7 @@ function App() {
           className="btn btn-danger btn-animation btn-red fw-semibold"
           data-bs-toggle="modal"
           data-bs-target="#clearCartModal"
+          disabled={cart.length === 0}
         >
           Svuota carrello
         </button>
@@ -318,7 +318,6 @@ function App() {
               <button
                 className="btn btn-secondary btn-animation btn-grey fw-semibold"
                 data-bs-dismiss="modal"
-                onClick={() => setShowClearCartModal(false)}
               >
                 Annulla
               </button>
@@ -329,7 +328,6 @@ function App() {
                   setCart([]);
                   reloadProducts();
                   setDiscounted(false);
-                  setShowClearCartModal(false);
                 }}
               >
                 Svuota

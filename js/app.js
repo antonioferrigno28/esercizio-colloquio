@@ -63,7 +63,6 @@ function App() {
   };
 
   // Gestione aggiunta al carrello, prende come parametri il prodotto e la quantità (1)
-  // Gestione aggiunta al carrello, prende come parametri il prodotto e la quantità (1)
   const addToCart = (product, quantity) => {
     // Blocca se la quantità è <= 0
     if (product.quantity < 1) {
@@ -92,7 +91,7 @@ function App() {
       }
     });
 
-    // Aggiorna la disponibilità visibile (ma non usarla per i controlli)
+    // Aggiorna la disponibilità visibile
     setProducts((prev) =>
       prev.map((item) =>
         item.id === product.id
@@ -100,6 +99,24 @@ function App() {
           : item
       )
     );
+  };
+
+  //Rimozione dal carrello dato l'id del prodotto
+  const removeFromCart = (productId) => {
+    // Trova l'oggetto da rimuovere
+    const itemToRemove = cart.find((item) => item.id === productId);
+
+    // Ripristina la quantità nel catalogo
+    setProducts((prevProducts) =>
+      prevProducts.map((product) =>
+        product.id === productId
+          ? { ...product, quantity: product.quantity + itemToRemove.quantity }
+          : product
+      )
+    );
+
+    // Rimuovi dal carrello
+    setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
   };
 
   //invio dell'ordine al backend
@@ -151,23 +168,39 @@ function App() {
   };
 
   return (
-    <div>
-      <h1 className="mb-4">Catalogo prodotti</h1>
-      <div className="row">
+    <div className="container py-4">
+      <h1 className="mb-5 text-primary-emphasis fw-bold border-bottom pb-2">
+        Catalogo Prodotti
+      </h1>
+
+      <div className="row g-4">
         {products.map((product) => (
-          <div key={product.id} className="col-md-4 mb-4">
-            <div className="card h-100 shadow-sm">
+          <div key={product.id} className="col-md-4">
+            <div className="card product-card h-100 border-0 shadow-sm">
+              <div className="product-img-wrapper">
+                <img
+                  src={
+                    product.image ||
+                    "https://www.horizonplant.com/wp-content/uploads/2017/05/placeholder-400x400.png"
+                  }
+                  alt={product.name}
+                  className="card-img-top product-img"
+                />
+              </div>
               <div className="card-body d-flex flex-column">
-                <h5 className="card-title">{product.name}</h5>
-                <p className="card-text">
-                  Prezzo: €{Number(product.price).toFixed(2)}
+                <h5 className="card-title fw-semibold">{product.name}</h5>
+                <p className="card-text fs-5 text-primary fw-bold">
+                  €{Number(product.price).toFixed(2)}
                 </p>
-                <p className="card-text">Disponibilità: {product.quantity}</p>
+                <span className="badge bg-light text-dark mb-3 border">
+                  Disponibilità: {product.quantity}
+                </span>
                 <button
-                  className="btn btn-primary mt-auto"
+                  className="btn btn-warning mt-auto text-dark fw-semibold"
+                  disabled={product.quantity === 0}
                   onClick={() => addToCart(product, 1)}
                 >
-                  Aggiungi al carrello
+                  🛒 Aggiungi al carrello
                 </button>
               </div>
             </div>
@@ -175,15 +208,56 @@ function App() {
         ))}
       </div>
 
-      <h1 className="mb-4">Carrello</h1>
+      <h2 className="mt-5 mb-4 border-bottom pb-2">Carrello</h2>
       <div className="row">
         {cart.map((product) => (
-          <div key={product.id} className="col-md-12 mb-3">
-            <div className="card">
-              <div className="card-body">
-                <p>
-                  {product.name} x {product.quantity} - Subtotale: €
-                  {(product.price * product.quantity).toFixed(2)}
+          <div key={product.id} className="col-12 mb-3">
+            <div className="d-flex border rounded shadow-sm p-3 align-items-center gap-3 flex-wrap">
+              <img
+                src={
+                  product.image ||
+                  "https://www.horizonplant.com/wp-content/uploads/2017/05/placeholder-400x400.png"
+                }
+                alt={product.name}
+                className="img-thumbnail"
+                style={{ width: "100px", height: "100px", objectFit: "cover" }}
+              />
+
+              <div className="flex-grow-1">
+                <h5 className="mb-1 fw-semibold">{product.name}</h5>
+                <p className="mb-1 text-muted small">Disponibilità immediata</p>
+                <div className="d-flex align-items-center gap-3 flex-wrap">
+                  <span className="fw-bold text-primary fs-5">
+                    €{Number(product.price).toFixed(2)}
+                  </span>
+                  <div className="input-group input-group-sm w-auto">
+                    <span className="input-group-text">Qty</span>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={product.quantity}
+                      min={1}
+                      max={product.initialQuantity}
+                      onChange={(e) =>
+                        addToCart(
+                          product,
+                          parseInt(e.target.value) - product.quantity
+                        )
+                      }
+                    />
+                  </div>
+                  <button
+                    className="btn btn-outline-danger btn-sm"
+                    onClick={() => removeFromCart(product.id)}
+                  >
+                    Rimuovi
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-end">
+                <p className="fw-semibold mb-0">
+                  Subtotale: €{(product.price * product.quantity).toFixed(2)}
                 </p>
               </div>
             </div>
@@ -191,22 +265,23 @@ function App() {
         ))}
       </div>
 
-      <h3>
-        Totale ordine {isDiscounted ? "con il 10% di sconto" : ""}: €
-        {getTotal()}
+      <h3 className="mt-4">
+        Totale ordine {isDiscounted ? "con il 10% di sconto" : ""}:{" "}
+        <span className="text-success">€{getTotal()}</span>
       </h3>
+
       <div className="d-flex justify-content-between mt-4">
-        <button className="btn btn-success" onClick={handleOrder}>
-          Conferma ordine
+        <button className="btn btn-success fw-semibold" onClick={handleOrder}>
+          ✅ Conferma ordine
         </button>
         <button
-          className="btn btn-danger"
+          className="btn btn-outline-danger"
           onClick={() => {
             setCart([]);
             reloadProducts();
           }}
         >
-          Svuota carrello
+          ❌ Svuota carrello
         </button>
       </div>
     </div>

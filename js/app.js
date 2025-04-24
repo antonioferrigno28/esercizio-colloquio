@@ -5,16 +5,15 @@ function App() {
   const [cart, setCart] = useState([]);
   const [isDiscounted, setDiscounted] = useState(false);
   const [orderData, setOrderData] = useState({ cart: [], total: 0 });
+  const [showOrderModal, setShowOrderModal] = useState(false); // Modal per ordine
+  const [showClearCartModal, setShowClearCartModal] = useState(false); // Modal per svuotare il carrello
 
   // FASE DI CARICAMENTO
 
-  // funzione per ricaricare i prodotti
   const reloadProducts = () => {
     fetch("get-products.php")
       .then((response) => response.json())
       .then((data) => {
-        // Aggiungi initialQuantity basato su quantity
-        //Per avere la quantità iniziale dei prodotti
         const productsWithInitialQuantity = data.map((product) => ({
           ...product,
           initialQuantity: product.quantity,
@@ -24,77 +23,53 @@ function App() {
       .catch((err) => console.error("Errore nel caricamento prodotti:", err));
   };
 
-  // Al caricamento della pagina prendi i prodotti richiamando la funzione
   useEffect(() => {
     reloadProducts();
   }, []);
 
   //FASE DI AGGIORNAMENTO DEL CARRELLO
 
-  // All'aggiornamento del carrello aggiorna il totale e controlla se è maggiore di 100 per scontarlo
   useEffect(() => {
-    // richiama la funzione di calcolo del totale e lo assegna a una variabile
     const total = calculateTotal(cart);
-    // se totale maggiore di 100 allora abilita lo sconto rendendolo true
     if (total > 100) {
       setDiscounted(true);
-      // console.log(cart);
-      // console.log(total);
-      // console.log(orderData);
     } else {
       setDiscounted(false);
     }
-    // console.log(cart);
     setOrderData({ cart, total });
   }, [cart]);
 
-  //funzione per calcolare il totale del carrello
   const calculateTotal = (cart) => {
-    // prende prodotto per prodotto e ne accumula i vari prezzi
     return cart.reduce(
       (acc, product) => acc + product.price * product.quantity,
       0
     );
   };
 
-  // calcolo del totale
   const getTotal = () => {
-    // richiama la funzione di calcolo del totale e lo assegna a una variabile
     let total = calculateTotal(cart);
-    // se sconto è settato su true
     if (isDiscounted) {
-      // calcola il totale aggiornato
       total *= 0.9;
     }
-    // ritorna il totale con due cifre dopo la virgola
     return total.toFixed(2);
   };
 
-  // Gestione aggiunta al carrello, prende come parametri il prodotto e la quantità (1)
   const addToCart = (product, quantity) => {
-    //Cerca se il prodotto è già presente nel carrello comparando gli id e assegna a una variabile
     const existing = cart.find((item) => item.id === product.id);
 
-    //aggiorna il carrello, prende lo stato precedente del carrello
     setCart((prev) => {
-      // Se il prodotto esiste già
       if (existing) {
-        //ritorna il carrello aggiornato
         return prev.map((item) =>
-          //compara gli id del prodotto e del prodotto nel carrello e se sono uguali ritorna l'item facendone una copia e aggiornando la quantità
           item.id === product.id
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       } else {
-        // Se il prodotto non esiste, aggiungilo al carrello copiando gli elementi di prev e aggiungendo il nuovo prodotto con la quantità
         return [...prev, { ...product, quantity }];
       }
     });
 
-    // Aggiorna la disponibilità visibile
     setProducts((prev) =>
-      // Se il prodotto c'è nel catalogo aggiorna la quantità facendo una copia e sottraendo la quantità nel carrello
       prev.map((item) =>
         item.id === product.id
           ? { ...item, quantity: item.quantity - quantity }
@@ -103,14 +78,10 @@ function App() {
     );
   };
 
-  //Rimozione dal carrello dato l'id del prodotto
   const removeFromCart = (productId) => {
-    // Trova l'oggetto da rimuovere comparando con quello arrivato come parametro
     const itemToRemove = cart.find((item) => item.id === productId);
 
-    // Ripristina la quantità nel catalogo
     setProducts((prevProducts) =>
-      // Se il prodotto esiste nel catalogo, ripristina la quantità
       prevProducts.map((product) =>
         product.id === productId
           ? { ...product, quantity: product.quantity + itemToRemove.quantity }
@@ -118,7 +89,6 @@ function App() {
       )
     );
 
-    // Rimuovi dal carrello l'oggetto
     setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
   };
 
@@ -132,11 +102,8 @@ function App() {
       .then((data) => {
         if (data.success) {
           alert("Ordine effettuato con successo!");
-          // svuota il carrello
           setCart([]);
-          // ricarica i prodotti con la nuova disponibilità
           reloadProducts();
-          //resetta lo stato dello sconto
           setDiscounted(false);
         } else {
           alert("Errore nell'effettuare l'ordine.");
@@ -176,7 +143,6 @@ function App() {
                 <button
                   className="btn btn-warning mt-auto text-dark fw-semibold"
                   disabled={product.quantity === 0}
-                  //passa alal funzione addToCart il prodotto e la quantità
                   onClick={() => addToCart(product, 1)}
                 >
                   🛒 Aggiungi al carrello
@@ -219,13 +185,9 @@ function App() {
                       value={product.quantity}
                       min={1}
                       max={product.initialQuantity}
-                      //quando cambia il valore dell'input chiama la funzione addToCart
-                      //passando l'intero prodotto e la differenza tra il valore dell'input e la quantità del prodotto
                       onChange={(e) =>
                         addToCart(
                           product,
-                          //es: se mettiamo 5 e la quantità è 2, il valore dell'input è 5 - 2 = 3
-                          //quindi aggiungiamo 3 al carrello
                           parseInt(e.target.value) - product.quantity
                         )
                       }
@@ -233,8 +195,6 @@ function App() {
                   </div>
                   <button
                     className="btn btn-outline-danger btn-sm"
-                    //passa alla funzione removeFromCart l'id del prodotto
-                    //per rimuoverlo dal carrello
                     onClick={() => removeFromCart(product.id)}
                   >
                     Rimuovi
@@ -262,22 +222,121 @@ function App() {
 
       <div className="d-flex justify-content-between mt-4">
         <button
+          type="button"
           className="btn btn-success btn-animation btn-green fw-semibold"
-          onClick={handleOrder}
+          data-bs-toggle="modal"
+          data-bs-target="#orderModal"
         >
-          Conferma ordine
+          Conferma Ordine
         </button>
         <button
-          className="btn btn-danger btn-animation btn-red fw-semibold "
-          onClick={() => {
-            // Svuota il carrello e ripristina la disponibilità dei prodotti
-            setCart([]);
-            reloadProducts();
-            setDiscounted(false);
-          }}
+          className="btn btn-danger btn-animation btn-red fw-semibold"
+          data-bs-toggle="modal"
+          data-bs-target="#clearCartModal"
         >
           Svuota carrello
         </button>
+      </div>
+
+      {/* Modale di conferma ordine */}
+
+      <div
+        className="modal fade"
+        id="orderModal"
+        tabIndex="-1"
+        aria-labelledby="orderModalLabel"
+        aria-hidden="true"
+      >
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title fw-semibold" id="orderModalLabel">
+                Conferma Ordine
+              </h5>
+              <button
+                type="button"
+                className="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div className="modal-body">
+              <p>Sei sicuro di voler confermare l'ordine?</p>
+              <p className="fw-semibold">
+                Totale{isDiscounted ? " con il 10% di sconto" : ""}: €
+                {getTotal()}
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary btn-animation btn-grey fw-semibold"
+                data-bs-dismiss="modal"
+              >
+                Annulla
+              </button>
+              <button
+                className="btn btn-success btn-animation btn-green fw-semibold"
+                data-bs-dismiss="modal"
+                onClick={() => {
+                  handleOrder();
+                  // Il dato della modale sarà gestito automaticamente dal data-bs-dismiss="modal"
+                }}
+              >
+                Conferma
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modale di conferma svuotamento carrello */}
+
+      <div
+        className="modal fade"
+        id="clearCartModal"
+        tabIndex="-1"
+        aria-labelledby="clearCartModalLabel"
+        aria-hidden="true"
+      >
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title fw-semibold">
+                Conferma Svuotamento Carrello
+              </h5>
+              <button
+                type="button"
+                className="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div className="modal-body">
+              <p>Sei sicuro di voler svuotare il carrello?</p>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary btn-animation btn-grey fw-semibold"
+                data-bs-dismiss="modal"
+                onClick={() => setShowClearCartModal(false)}
+              >
+                Annulla
+              </button>
+              <button
+                className="btn btn-danger btn-animation btn-red fw-semibold"
+                data-bs-dismiss="modal"
+                onClick={() => {
+                  setCart([]);
+                  reloadProducts();
+                  setDiscounted(false);
+                  setShowClearCartModal(false);
+                }}
+              >
+                Svuota
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

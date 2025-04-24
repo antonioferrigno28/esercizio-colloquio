@@ -47,3 +47,7 @@ body {
 .btn-green:hover {
   background-color: #28a745;
 }
+
+.btn-grey:hover {
+  background-color: #6c757d;
+}

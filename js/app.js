@@ -108,6 +108,7 @@ function App() {
 
     // Ripristina la quantità nel catalogo
     setProducts((prevProducts) =>
+      // Se il prodotto esiste nel catalogo, ripristina la quantità
       prevProducts.map((product) =>
         product.id === productId
           ? { ...product, quantity: product.quantity + itemToRemove.quantity }

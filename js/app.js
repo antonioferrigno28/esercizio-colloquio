@@ -132,14 +132,25 @@ function App() {
               </div>
               <div className="card-body d-flex flex-column">
                 <h5 className="card-title fw-semibold">{product.name}</h5>
-                <p className="card-text fs-5 text-primary fw-bold">
+                <p className="card-text fs-6 text-dark fw-bold">
                   €{Number(product.price).toFixed(2)}
                 </p>
-                <span className="badge bg-light text-dark mb-3 border">
-                  Disponibilità: {product.quantity}
+                <span
+                  className={
+                    "badge bg-light mb-3 border " +
+                    (product.quantity <= 0 ? "text-danger" : "text-dark")
+                  }
+                >
+                  Disponibilità:{" "}
+                  {product.quantity > 0 ? product.quantity : "Non disponibile"}
                 </span>
                 <button
-                  className="btn btn-warning mt-auto text-dark fw-semibold"
+                  className={
+                    "btn mt-auto fw-semibold " +
+                    (product.quantity <= 0
+                      ? "btn-danger text-white"
+                      : "btn-warning text-dark")
+                  }
                   disabled={product.quantity === 0}
                   onClick={() => addToCart(product, 1)}
                 >
@@ -172,7 +183,7 @@ function App() {
                 <h5 className="mb-1 fw-semibold">{product.name}</h5>
                 <p className="mb-1 text-muted small">Disponibilità immediata</p>
                 <div className="d-flex align-items-center gap-3 flex-wrap">
-                  <span className="fw-bold text-primary fs-5">
+                  <span className="fw-bold text-dark fs-6">
                     €{Number(product.price).toFixed(2)}
                   </span>
                   <div className="input-group input-group-sm w-auto">

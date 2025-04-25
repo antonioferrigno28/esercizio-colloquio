@@ -9,8 +9,3 @@ $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $pass);
 
 // Impostiamo il comportamento di errore per l'eccezione
 $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-// Verifica connessione
-if (!$conn) {
-    die("Errore connessione DB");
-}
